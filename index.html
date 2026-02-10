@@ -2,215 +2,207 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>FIFA MINI WEB – FULL</title>
+<title>Dream League 2026 Mobile</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<link rel="manifest" href="data:application/json,{
+  &quot;name&quot;:&quot;Dream League 2026&quot;,
+  &quot;short_name&quot;:&quot;DLS26&quot;,
+  &quot;start_url&quot;:&quot;.&quot;,
+  &quot;display&quot;:&quot;standalone&quot;,
+  &quot;background_color&quot;:&quot;#000&quot;,
+  &quot;theme_color&quot;:&quot;#00c853&quot;
+}">
 <style>
-body{
-  background:#0b6623;
-  color:white;
-  text-align:center;
-  font-family:Arial;
-}
-canvas{
-  background:#1e8f3f;
-  border:4px solid white;
-  display:block;
-  margin:auto;
-}
-button{
-  padding:10px 20px;
-  font-size:16px;
-  cursor:pointer;
-  margin:5px;
-}
-.card{
-  width:220px;
-  margin:10px auto;
-  padding:10px;
-  border-radius:10px;
-  font-weight:bold;
-}
-.Common{background:#3498db}
-.Rare{background:#2ecc71}
-.Epic{background:#9b59b6}
-.Legend{background:gold;color:black}
+*{margin:0;padding:0;box-sizing:border-box;touch-action:none}
+body{overflow:hidden;background:#000;font-family:Arial}
+#menu{position:fixed;inset:0;background:linear-gradient(#0a7,#032);
+display:flex;flex-direction:column;justify-content:center;align-items:center;
+gap:14px;color:#fff}
+#menu button{width:220px;height:50px;font-size:18px;border-radius:14px;
+border:none;background:#00c853;color:#fff}
+#hud,#commentary{position:fixed;left:50%;transform:translateX(-50%);
+background:rgba(0,0,0,.6);color:#fff;border-radius:10px;padding:6px 16px}
+#hud{top:10px}
+#commentary{top:48px;font-size:14px}
+#joystick{position:fixed;bottom:20px;left:20px;width:120px;height:120px;
+border-radius:50%;background:rgba(255,255,255,.15)}
+#stick{position:absolute;left:40px;top:40px;width:40px;height:40px;
+border-radius:50%;background:rgba(255,255,255,.6)}
+#buttons{position:fixed;bottom:20px;right:20px;display:flex;
+flex-direction:column;gap:10px}
+#buttons button{width:90px;height:50px;border-radius:14px;border:none;
+background:#00c853;color:#fff;font-weight:bold}
 </style>
 </head>
 <body>
 
-<h1>⚽ FIFA MINI WEB – FULL</h1>
-<p>WASD: Di chuyển | J: Sút</p>
-<button onclick="openPack()">🃏 MỞ THẺ CẦU THỦ</button>
-<div id="card"></div>
+<div id="menu">
+  <h1>DREAM LEAGUE 2026</h1>
+  <button onclick="startGame()">▶ PLAY</button>
+  <button onclick="openPack()">🃏 OPEN PACK</button>
+  <button onclick="openMarket()">🔁 TRANSFER</button>
+  <button onclick="openTraining()">🏋️ TRAINING</button>
+</div>
 
-<canvas id="game" width="1000" height="550"></canvas>
+<div id="hud">0 - 0</div>
+<div id="commentary">Kick Off!</div>
 
+<div id="joystick"><div id="stick"></div></div>
+<div id="buttons">
+  <button onclick="passBall()">PASS</button>
+  <button onclick="shoot()">SHOOT</button>
+</div>
+
+<audio id="kick" src="https://cdn.pixabay.com/audio/2022/03/15/audio_2c3f6ef6cc.mp3"></audio>
+<audio id="goal" src="https://cdn.pixabay.com/audio/2022/03/10/audio_6f4c3a2f0f.mp3"></audio>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 <script>
-// ===== INPUT =====
-const keys = {};
-document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
-document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
+/* ========= SAVE ========= */
+let save = JSON.parse(localStorage.getItem("career")) || {
+ coins:0, team:[], league:{match:0,points:0}
+};
+const saveGame=()=>localStorage.setItem("career",JSON.stringify(save));
 
-// ===== CANVAS =====
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+/* ========= UI ========= */
+const say=t=>commentary.innerText=t;
 
-// ===== THẺ CẦU THỦ =====
-const cards = [
- {name:"Cầu thủ Trẻ",rarity:"Common",speed:2.2,shoot:2.5},
- {name:"Ngôi Sao",rarity:"Rare",speed:2.6,shoot:3},
- {name:"Siêu Sao",rarity:"Epic",speed:3,shoot:3.6},
- {name:"Huyền Thoại",rarity:"Legend",speed:3.5,shoot:4.5}
-];
-
-let currentCard = cards[0];
-let shootPower = currentCard.shoot;
-
-// ===== MỞ THẺ =====
+/* ========= GACHA ========= */
 function openPack(){
- const r=Math.random()*100;
- if(r<70) currentCard=cards[0];
- else if(r<90) currentCard=cards[1];
- else if(r<99) currentCard=cards[2];
- else currentCard=cards[3];
-
- document.getElementById("card").innerHTML=`
- <div class="card ${currentCard.rarity}">
- ${currentCard.rarity.toUpperCase()}<br>
- ${currentCard.name}<br>
- ⚡ Tốc độ: ${currentCard.speed}<br>
- 💥 Sút: ${currentCard.shoot}
- </div>`;
-
- user.speed=currentCard.speed;
- shootPower=currentCard.shoot;
+ const p={name:"Player "+(save.team.length+1),
+ atk:50+Math.random()*40|0,
+ spd:50+Math.random()*40|0,
+ def:50+Math.random()*40|0};
+ save.team.push(p); saveGame();
+ alert("You got "+p.name);
 }
 
-// ===== CẦU THỦ =====
-function makePlayer(x,y,color,isUser=false,isGK=false){
- return{
-  x,y,baseX:x,baseY:y,
-  r:isGK?14:10,
-  color,
-  speed:2.2,
-  isUser,
-  isGK
- };
-}
-
-// ===== ĐỘI HÌNH =====
-const teamA=[],teamB=[];
-const user = makePlayer(300,275,"blue",true);
-teamA.push(makePlayer(40,275,"yellow",false,true));
-teamA.push(user);
-
-const posA=[[150,100],[150,250],[150,400],[300,150],[300,400],[450,120],[450,430],[600,275],[600,150],[600,400]];
-posA.forEach(p=>teamA.push(makePlayer(p[0],p[1],"cyan")));
-
-teamB.push(makePlayer(960,275,"yellow",false,true));
-const posB=[[850,100],[850,250],[850,400],[700,150],[700,400],[550,120],[550,430],[400,275],[550,275],[700,275]];
-posB.forEach(p=>teamB.push(makePlayer(p[0],p[1],"red")));
-
-// ===== BÓNG =====
-const ball={x:500,y:275,vx:0,vy:0,r:7};
-let scoreA=0,scoreB=0;
-
-// ===== AI =====
-function aiMove(p,tx,ty){
- const dx=tx-p.x,dy=ty-p.y;
- const d=Math.hypot(dx,dy);
- if(d>1){
-  p.x+=dx/d*p.speed*0.8;
-  p.y+=dy/d*p.speed*0.8;
+/* ========= TRANSFER ========= */
+function openMarket(){
+ let price=300+Math.random()*300|0;
+ let p={name:"Market Player",atk:60+Math.random()*30|0,
+ spd:60+Math.random()*30|0,def:60+Math.random()*30|0,price};
+ if(confirm(`${p.name}\nATK:${p.atk} SPD:${p.spd} DEF:${p.def}\nPrice:${price}`)){
+  if(save.coins>=price){
+   save.coins-=price; save.team.push(p); saveGame();
+   alert("Signed!");
+  } else alert("Not enough coins");
  }
 }
-function limit(p){
- p.x=Math.max(10,Math.min(canvas.width-10,p.x));
- p.y=Math.max(10,Math.min(canvas.height-10,p.y));
+
+/* ========= TRAIN ========= */
+function openTraining(){
+ if(!save.team.length) return alert("No player!");
+ if(save.coins<50) return alert("Not enough coins");
+ save.coins-=50; save.team[0].atk+=5;
+ saveGame(); alert("Training success!");
 }
 
-// ===== UPDATE =====
-function update(){
- // Người chơi
- if(keys.w) user.y-=user.speed;
- if(keys.s) user.y+=user.speed;
- if(keys.a) user.x-=user.speed;
- if(keys.d) user.x+=user.speed;
- limit(user);
+/* ========= GAME CORE ========= */
+let scene,camera,renderer,player,goalie,ball,enemy=[],fakePlayers=[];
+let scoreA=0,scoreB=0,playing=false;
 
- // AI đội A
- teamA.forEach(p=>{
-  if(p.isUser) return;
-  if(Math.hypot(ball.x-p.x,ball.y-p.y)<140)
-   aiMove(p,ball.x,ball.y);
-  else aiMove(p,p.baseX,p.baseY);
-  limit(p);
- });
+function startGame(){
+ menu.style.display="none";
+ init(); playing=true; animate();
+}
 
- // AI đội B
- teamB.forEach(p=>{
-  if(Math.hypot(ball.x-p.x,ball.y-p.y)<140)
-   aiMove(p,ball.x,ball.y);
-  else aiMove(p,p.baseX,p.baseY);
-  limit(p);
- });
+function makePlayer(color,x,z){
+ let m=new THREE.Mesh(
+ new THREE.CapsuleGeometry(.6,1.6,4,8),
+ new THREE.MeshStandardMaterial({color}));
+ m.position.set(x,1,z); return m;
+}
 
- // Sút
- const dx=ball.x-user.x,dy=ball.y-user.y;
- if(keys.j && Math.hypot(dx,dy)<18){
-  ball.vx=dx*shootPower*0.25;
-  ball.vy=dy*shootPower*0.25;
+function init(){
+ scene=new THREE.Scene();
+ scene.background=new THREE.Color(0x1b5e20);
+ camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,1000);
+ camera.position.set(0,18,22);
+ renderer=new THREE.WebGLRenderer({antialias:true});
+ renderer.setSize(innerWidth,innerHeight);
+ document.body.appendChild(renderer.domElement);
+
+ scene.add(new THREE.AmbientLight(0xffffff,.6));
+ let sun=new THREE.DirectionalLight(0xffffff,.8);
+ sun.position.set(30,50,30); scene.add(sun);
+
+ let field=new THREE.Mesh(
+ new THREE.PlaneGeometry(60,38),
+ new THREE.MeshStandardMaterial({color:0x2e7d32}));
+ field.rotation.x=-Math.PI/2; scene.add(field);
+
+ goalie=makePlayer(0xffeb3b,0,-16); scene.add(goalie);
+ player=makePlayer(0x2196f3,0,10); scene.add(player);
+
+ for(let i=0;i<3;i++){
+  let e=makePlayer(0xf44336,-6+i*6,-6);
+  enemy.push(e); scene.add(e);
  }
 
- // Bóng
- ball.x+=ball.vx;
- ball.y+=ball.vy;
- ball.vx*=0.97;
- ball.vy*=0.97;
+ for(let i=0;i<6;i++){
+  let f=makePlayer(0x1565c0,-20+i*7,0);
+  fakePlayers.push(f); scene.add(f);
+ }
 
- // Ghi bàn
- if(ball.x<10 && ball.y>220 && ball.y<330){scoreB++;reset();}
- if(ball.x>990 && ball.y>220 && ball.y<330){scoreA++;reset();}
+ ball=new THREE.Mesh(
+ new THREE.SphereGeometry(.35,16,16),
+ new THREE.MeshStandardMaterial({color:0xffffff}));
+ ball.position.set(0,.35,8);
+ ball.userData={vx:0,vz:0};
+ scene.add(ball);
 }
 
-function reset(){
- ball.x=500; ball.y=275;
- ball.vx=ball.vy=0;
+/* ========= JOYSTICK ========= */
+let joy={x:0,y:0};
+joystick.ontouchmove=e=>{
+ let r=joystick.getBoundingClientRect(),t=e.touches[0];
+ let dx=t.clientX-r.left-60,dy=t.clientY-r.top-60;
+ let d=Math.min(40,Math.hypot(dx,dy)),a=Math.atan2(dy,dx);
+ joy.x=Math.cos(a)*(d/40); joy.y=Math.sin(a)*(d/40);
+ stick.style.transform=`translate(${joy.x*40}px,${joy.y*40}px)`;
+};
+joystick.ontouchend=()=>{joy.x=joy.y=0;stick.style.transform="translate(0,0)"};
+
+/* ========= ACTION ========= */
+function shoot(){kick.play(); ball.userData.vz=-1;}
+function passBall(){kick.play(); ball.userData.vx=(Math.random()-.5);}
+
+/* ========= LOOP ========= */
+function animate(){
+ if(!playing) return;
+ requestAnimationFrame(animate);
+
+ player.position.x+=joy.x*.25;
+ player.position.z+=joy.y*.25;
+ ball.position.x+=(player.position.x-ball.position.x)*.1;
+ ball.position.z+=(player.position.z-2-ball.position.z)*.1;
+ ball.position.x+=ball.userData.vx;
+ ball.position.z+=ball.userData.vz;
+ ball.userData.vx*=.94; ball.userData.vz*=.94;
+
+ goalie.position.x+=(ball.position.x-goalie.position.x)*.12;
+ enemy.forEach(e=>{
+  e.position.x+=(ball.position.x-e.position.x)*.03;
+  e.position.z+=(ball.position.z-e.position.z)*.03;
+ });
+ fakePlayers.forEach(p=>{
+  p.position.z+=Math.sin(Date.now()/800+p.position.x)*.01;
+ });
+
+ if(ball.position.z<-18 && Math.abs(ball.position.x)<4){
+  scoreA++; hud.innerText=scoreA+" - "+scoreB;
+  save.coins+=100; saveGame();
+  goal.play(); navigator.vibrate?.(200);
+  say("GOOOOOAL!!!");
+  ball.position.set(0,.35,8);
+ }
+
+ camera.position.x=player.position.x;
+ camera.position.z=player.position.z+22;
+ camera.lookAt(player.position.x,1,player.position.z-5);
+ renderer.render(scene,camera);
 }
-
-// ===== VẼ =====
-function drawPlayer(p){
- ctx.beginPath();
- ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
- ctx.fillStyle=p.color;
- ctx.fill();
-}
-
-function draw(){
- ctx.clearRect(0,0,canvas.width,canvas.height);
- ctx.fillStyle="white";
- ctx.fillRect(0,220,10,110);
- ctx.fillRect(990,220,10,110);
-
- [...teamA,...teamB].forEach(drawPlayer);
-
- ctx.beginPath();
- ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);
- ctx.fillStyle="white";
- ctx.fill();
-
- ctx.fillText(`ĐỘI BẠN ${scoreA} - ${scoreB} ĐỐI THỦ`,420,30);
-}
-
-// ===== LOOP =====
-function loop(){
- update();
- draw();
- requestAnimationFrame(loop);
-}
-
-openPack();
-loop();
 </script>
-
 </body>
 </html>
