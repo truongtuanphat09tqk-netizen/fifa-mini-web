@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIFA MINI ULTIMATE+</title>
+<style>
+body{
+ font-family:Arial;
+ background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+ color:white;
+ text-align:center;
+ margin:0;
+}
+button{
+ padding:10px 14px;
+ margin:4px;
+ border:none;
+ border-radius:10px;
+ font-size:14px;
+ cursor:pointer;
+}
+.card{
+ width:180px;
+ margin:10px auto;
+ padding:8px;
+ border-radius:16px;
+ box-shadow:0 0 15px rgba(0,0,0,.6);
+ animation:flip .4s;
+}
+.gold{background:gold;color:black}
+.silver{background:silver;color:black}
+.bronze{background:#cd7f32;color:black}
+.card img{
+ width:100%;
+ border-radius:12px;
+}
+@keyframes flip{
+ from{transform:scale(.6);opacity:0}
+ to{transform:scale(1);opacity:1}
+}
+.commentary{
+ background:#00000055;
+ margin:10px;
+ padding:10px;
+ border-radius:10px;
+ text-align:left;
+ font-size:14px;
+}
+</style>
+</head>
+<body>
+
+<h1>⚽ FIFA MINI ULTIMATE+</h1>
+💰 Coin: <b id="coin"></b> | 🏆 Vòng: <b id="round"></b>/10<br><br>
+
+<button onclick="openPack()">🎴 Mở Pack (100)</button>
+<button onclick="playMatch()">⚽ Đá Trận</button>
+<button onclick="upgrade()">⬆️ Nâng Cấp</button>
+<button onclick="resetGame()">🔄 Reset</button>
+
+<h3>📋 ĐỘI HÌNH</h3>
+<div id="team"></div>
+
+<h3>🎙️ BÌNH LUẬN</h3>
+<div id="commentary" class="commentary"></div>
+
+<script>
+let coin = localStorage.coin?+localStorage.coin:500;
+let round = localStorage.round?+localStorage.round:1;
+let team = localStorage.team?JSON.parse(localStorage.team):[];
+
+const players = [
+{name:"Messi",pos:"ST",ovr:93,rar:"gold",img:"https://upload.wikimedia.org/wikipedia/commons/c/c1/Lionel_Messi_20180626.jpg"},
+{name:"Ronaldo",pos:"ST",ovr:92,rar:"gold",img:"https://upload.wikimedia.org/wikipedia/commons/8/8c/Cristiano_Ronaldo_2018.jpg"},
+{name:"Mbappé",pos:"ST",ovr:91,rar:"gold",img:"https://upload.wikimedia.org/wikipedia/commons/a/a4/Kylian_Mbapp%C3%A9_2019.jpg"},
+{name:"De Bruyne",pos:"CM",ovr:91,rar:"gold",img:"https://upload.wikimedia.org/wikipedia/commons/4/40/Kevin_De_Bruyne_20180709.jpg"},
+{name:"Van Dijk",pos:"CB",ovr:89,rar:"gold",img:"https://upload.wikimedia.org/wikipedia/commons/3/3e/Virgil_van_Dijk_2019.jpg"},
+{name:"Alisson",pos:"GK",ovr:89,rar:"gold",img:"https://upload.wikimedia.org/wikipedia/commons/0/0f/Alisson_Becker_2019.jpg"},
+{name:"Pedri",pos:"CM",ovr:86,rar:"silver",img:"https://upload.wikimedia.org/wikipedia/commons/7/7c/Pedri_2021.jpg"},
+{name:"Saka",pos:"ST",ovr:82,rar:"bronze",img:"https://upload.wikimedia.org/wikipedia/commons/3/3e/Bukayo_Saka_2021.jpg"}
+];
+
+function save(){
+ localStorage.coin=coin;
+ localStorage.round=round;
+ localStorage.team=JSON.stringify(team);
+}
+
+function openPack(){
+ if(coin<100){alert("Không đủ coin");return;}
+ coin-=100;
+ let r=Math.random();
+ let pool=r<0.2?players.filter(p=>p.rar=="gold"):
+          r<0.5?players.filter(p=>p.rar=="silver"):
+          players.filter(p=>p.rar=="bronze");
+ let p=JSON.parse(JSON.stringify(pool[Math.floor(Math.random()*pool.length)]));
+ let idx=team.findIndex(t=>t.pos==p.pos);
+ if(idx>=0) team[idx]=p;
+ else if(team.length<4) team.push(p);
+ render(); save();
+}
+
+function playMatch(){
+ if(team.length<4){alert("Cần đủ ST CM CB GK");return;}
+ let ovr=team.reduce((s,p)=>s+p.ovr,0)/4;
+ let enemy=75+round*2+Math.random()*6;
+
+ let g1=Math.max(0,Math.round((ovr-enemy)/6+Math.random()*3));
+ let g2=Math.max(0,Math.round((enemy-ovr)/6+Math.random()*3));
+ let min=90+Math.floor(Math.random()*6);
+
+ let text=`⏱️ Trận đấu bắt đầu...\n`;
+ text+=`⚔️ Hai đội giằng co quyết liệt.\n`;
+
+ if(g1>0) text+=`⚽ ${team[0].name} ghi bàn mở tỷ số!\n`;
+ if(g2>0) text+=`⚠️ Đối thủ gỡ hòa!\n`;
+
+ if(g1>=g2){
+  coin+=200; round++;
+  text+=`🔥 PHÚT ${min}': BÀN THẮNG QUYẾT ĐỊNH!\n`;
+  text+=`🏆 CHIẾN THẮNG ${g1}-${g2}!`;
+  if(round>10){text+=" 🎉 VÔ ĐỊCH!";round=1;}
+ }else{
+  text+=`😢 Thất bại ${g1}-${g2}.`;
+ }
+
+ document.getElementById("commentary").innerText=text;
+ render(); save();
+}
+
+function upgrade(){
+ if(coin<150){alert("Không đủ coin");return;}
+ let p=team[Math.floor(Math.random()*team.length)];
+ p.ovr++; coin-=150;
+ document.getElementById("commentary").innerText=`⬆️ ${p.name} được nâng cấp +1 OVR`;
+ render(); save();
+}
+
+function render(){
+ document.getElementById("coin").innerText=coin;
+ document.getElementById("round").innerText=round;
+ let html="";
+ team.forEach(p=>{
+ html+=`<div class="card ${p.rar}">
+ <img src="${p.img}">
+ <b>${p.name}</b><br>
+ ${p.pos} | OVR ${p.ovr}
+ </div>`;
+ });
+ document.getElementById("team").innerHTML=html;
+}
+
+function resetGame(){
+ if(confirm("Reset game?")){
+ localStorage.clear(); location.reload();
+ }
+}
+
+render();
+</script>
+</body>
+</html>
