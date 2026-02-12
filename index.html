@@ -1,208 +1,486 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<title>Dream League 2026 Mobile</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<link rel="manifest" href="data:application/json,{
-  &quot;name&quot;:&quot;Dream League 2026&quot;,
-  &quot;short_name&quot;:&quot;DLS26&quot;,
-  &quot;start_url&quot;:&quot;.&quot;,
-  &quot;display&quot;:&quot;standalone&quot;,
-  &quot;background_color&quot;:&quot;#000&quot;,
-  &quot;theme_color&quot;:&quot;#00c853&quot;
-}">
-<style>
-*{margin:0;padding:0;box-sizing:border-box;touch-action:none}
-body{overflow:hidden;background:#000;font-family:Arial}
-#menu{position:fixed;inset:0;background:linear-gradient(#0a7,#032);
-display:flex;flex-direction:column;justify-content:center;align-items:center;
-gap:14px;color:#fff}
-#menu button{width:220px;height:50px;font-size:18px;border-radius:14px;
-border:none;background:#00c853;color:#fff}
-#hud,#commentary{position:fixed;left:50%;transform:translateX(-50%);
-background:rgba(0,0,0,.6);color:#fff;border-radius:10px;padding:6px 16px}
-#hud{top:10px}
-#commentary{top:48px;font-size:14px}
-#joystick{position:fixed;bottom:20px;left:20px;width:120px;height:120px;
-border-radius:50%;background:rgba(255,255,255,.15)}
-#stick{position:absolute;left:40px;top:40px;width:40px;height:40px;
-border-radius:50%;background:rgba(255,255,255,.6)}
-#buttons{position:fixed;bottom:20px;right:20px;display:flex;
-flex-direction:column;gap:10px}
-#buttons button{width:90px;height:50px;border-radius:14px;border:none;
-background:#00c853;color:#fff;font-weight:bold}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DLS 2026 - Complete Professional Edition</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div id="menu">
-  <h1>DREAM LEAGUE 2026</h1>
-  <button onclick="startGame()">▶ PLAY</button>
-  <button onclick="openPack()">🃏 OPEN PACK</button>
-  <button onclick="openMarket()">🔁 TRANSFER</button>
-  <button onclick="openTraining()">🏋️ TRAINING</button>
-</div>
+    <!-- ===== MENU ===== -->
+    <div id="menu">
+        <h1>DLS 2026</h1>
+        <h2>Real Madrid Career Mode</h2>
+        <button onclick="startGame()">BẮT ĐẦU MÙA GIẢI</button>
+    </div>
 
-<div id="hud">0 - 0</div>
-<div id="commentary">Kick Off!</div>
+    <!-- ===== HUD ===== -->
+    <div id="hud" class="hidden">
+        <div id="score">Real Madrid 0 - 0 Barcelona</div>
+        <div id="time">00:00</div>
+    </div>
 
-<div id="joystick"><div id="stick"></div></div>
-<div id="buttons">
-  <button onclick="passBall()">PASS</button>
-  <button onclick="shoot()">SHOOT</button>
-</div>
+    <!-- ===== CAREER INFO ===== -->
+    <div id="careerBox" class="hidden">
+        <div>Trận: <span id="matchNum">1</span>/6</div>
+        <div>Điểm: <span id="points">0</span></div>
+        <div>Tiền: $<span id="money">0</span></div>
+    </div>
 
-<audio id="kick" src="https://cdn.pixabay.com/audio/2022/03/15/audio_2c3f6ef6cc.mp3"></audio>
-<audio id="goal" src="https://cdn.pixabay.com/audio/2022/03/10/audio_6f4c3a2f0f.mp3"></audio>
+    <!-- ===== COMMENTARY ===== -->
+    <div id="commentary" class="hidden"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
-<script>
-/* ========= SAVE ========= */
-let save = JSON.parse(localStorage.getItem("career")) || {
- coins:0, team:[], league:{match:0,points:0}
-};
-const saveGame=()=>localStorage.setItem("career",JSON.stringify(save));
+    <!-- ===== SÂN BÓNG ===== -->
+    <div id="field" class="hidden"></div>
 
-/* ========= UI ========= */
-const say=t=>commentary.innerText=t;
+    <!-- ===== THAY NGƯỜI ===== -->
+    <div id="subPanel" class="hidden">
+        <h3>Thay Người</h3>
+        <div id="subList"></div>
+        <button onclick="closeSub()">Đóng</button>
+    </div>
 
-/* ========= GACHA ========= */
-function openPack(){
- const p={name:"Player "+(save.team.length+1),
- atk:50+Math.random()*40|0,
- spd:50+Math.random()*40|0,
- def:50+Math.random()*40|0};
- save.team.push(p); saveGame();
- alert("You got "+p.name);
-}
+    <!-- ===== CONTROLS MOBILE ===== -->
+    <div id="controls" class="hidden">
+        <div id="joystick">
+            <div id="stick"></div>
+        </div>
 
-/* ========= TRANSFER ========= */
-function openMarket(){
- let price=300+Math.random()*300|0;
- let p={name:"Market Player",atk:60+Math.random()*30|0,
- spd:60+Math.random()*30|0,def:60+Math.random()*30|0,price};
- if(confirm(`${p.name}\nATK:${p.atk} SPD:${p.spd} DEF:${p.def}\nPrice:${price}`)){
-  if(save.coins>=price){
-   save.coins-=price; save.team.push(p); saveGame();
-   alert("Signed!");
-  } else alert("Not enough coins");
- }
-}
+        <div id="buttons">
+            <button onclick="passBall()">PASS</button>
+            <button ontouchstart="shootBall()">SHOOT</button>
+            <button onclick="openSub()">SUB</button>
+        </div>
+    </div>
 
-/* ========= TRAIN ========= */
-function openTraining(){
- if(!save.team.length) return alert("No player!");
- if(save.coins<50) return alert("Not enough coins");
- save.coins-=50; save.team[0].atk+=5;
- saveGame(); alert("Training success!");
-}
+    <script src="game.js"></script>
 
-/* ========= GAME CORE ========= */
-let scene,camera,renderer,player,goalie,ball,enemy=[],fakePlayers=[];
-let scoreA=0,scoreB=0,playing=false;
-
-function startGame(){
- menu.style.display="none";
- init(); playing=true; animate();
-}
-
-function makePlayer(color,x,z){
- let m=new THREE.Mesh(
- new THREE.CapsuleGeometry(.6,1.6,4,8),
- new THREE.MeshStandardMaterial({color}));
- m.position.set(x,1,z); return m;
-}
-
-function init(){
- scene=new THREE.Scene();
- scene.background=new THREE.Color(0x1b5e20);
- camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,1000);
- camera.position.set(0,18,22);
- renderer=new THREE.WebGLRenderer({antialias:true});
- renderer.setSize(innerWidth,innerHeight);
- document.body.appendChild(renderer.domElement);
-
- scene.add(new THREE.AmbientLight(0xffffff,.6));
- let sun=new THREE.DirectionalLight(0xffffff,.8);
- sun.position.set(30,50,30); scene.add(sun);
-
- let field=new THREE.Mesh(
- new THREE.PlaneGeometry(60,38),
- new THREE.MeshStandardMaterial({color:0x2e7d32}));
- field.rotation.x=-Math.PI/2; scene.add(field);
-
- goalie=makePlayer(0xffeb3b,0,-16); scene.add(goalie);
- player=makePlayer(0x2196f3,0,10); scene.add(player);
-
- for(let i=0;i<3;i++){
-  let e=makePlayer(0xf44336,-6+i*6,-6);
-  enemy.push(e); scene.add(e);
- }
-
- for(let i=0;i<6;i++){
-  let f=makePlayer(0x1565c0,-20+i*7,0);
-  fakePlayers.push(f); scene.add(f);
- }
-
- ball=new THREE.Mesh(
- new THREE.SphereGeometry(.35,16,16),
- new THREE.MeshStandardMaterial({color:0xffffff}));
- ball.position.set(0,.35,8);
- ball.userData={vx:0,vz:0};
- scene.add(ball);
-}
-
-/* ========= JOYSTICK ========= */
-let joy={x:0,y:0};
-joystick.ontouchmove=e=>{
- let r=joystick.getBoundingClientRect(),t=e.touches[0];
- let dx=t.clientX-r.left-60,dy=t.clientY-r.top-60;
- let d=Math.min(40,Math.hypot(dx,dy)),a=Math.atan2(dy,dx);
- joy.x=Math.cos(a)*(d/40); joy.y=Math.sin(a)*(d/40);
- stick.style.transform=`translate(${joy.x*40}px,${joy.y*40}px)`;
-};
-joystick.ontouchend=()=>{joy.x=joy.y=0;stick.style.transform="translate(0,0)"};
-
-/* ========= ACTION ========= */
-function shoot(){kick.play(); ball.userData.vz=-1;}
-function passBall(){kick.play(); ball.userData.vx=(Math.random()-.5);}
-
-/* ========= LOOP ========= */
-function animate(){
- if(!playing) return;
- requestAnimationFrame(animate);
-
- player.position.x+=joy.x*.25;
- player.position.z+=joy.y*.25;
- ball.position.x+=(player.position.x-ball.position.x)*.1;
- ball.position.z+=(player.position.z-2-ball.position.z)*.1;
- ball.position.x+=ball.userData.vx;
- ball.position.z+=ball.userData.vz;
- ball.userData.vx*=.94; ball.userData.vz*=.94;
-
- goalie.position.x+=(ball.position.x-goalie.position.x)*.12;
- enemy.forEach(e=>{
-  e.position.x+=(ball.position.x-e.position.x)*.03;
-  e.position.z+=(ball.position.z-e.position.z)*.03;
- });
- fakePlayers.forEach(p=>{
-  p.position.z+=Math.sin(Date.now()/800+p.position.x)*.01;
- });
-
- if(ball.position.z<-18 && Math.abs(ball.position.x)<4){
-  scoreA++; hud.innerText=scoreA+" - "+scoreB;
-  save.coins+=100; saveGame();
-  goal.play(); navigator.vibrate?.(200);
-  say("GOOOOOAL!!!");
-  ball.position.set(0,.35,8);
- }
-
- camera.position.x=player.position.x;
- camera.position.z=player.position.z+22;
- camera.lookAt(player.position.x,1,player.position.z-5);
- renderer.render(scene,camera);
-}
-</script>
 </body>
 </html>
+ * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #0f2027;
+    color: white;
+    overflow: hidden;
+}
+
+/* ===== MENU ===== */
+#menu {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(#000428, #004e92);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+#menu h1 {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+#menu h2 {
+    margin-bottom: 20px;
+}
+
+#menu button {
+    padding: 15px 30px;
+    font-size: 16px;
+    border: none;
+    border-radius: 10px;
+    background: #00c6ff;
+    color: black;
+    font-weight: bold;
+}
+
+/* ===== HUD ===== */
+#hud {
+    text-align: center;
+    padding: 5px;
+    font-weight: bold;
+    background: #00000080;
+}
+
+/* ===== CAREER BOX ===== */
+#careerBox {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #000000aa;
+    padding: 10px;
+    font-size: 14px;
+    border-bottom-left-radius: 10px;
+}
+
+/* ===== COMMENTARY ===== */
+#commentary {
+    position: absolute;
+    bottom: 140px;
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    color: yellow;
+}
+
+/* ===== FIELD ===== */
+#field {
+    width: 100%;
+    height: 520px;
+    background: linear-gradient(#1e7f32, #1a6e2b);
+    position: relative;
+    overflow: hidden;
+}
+
+/* ===== PLAYER ===== */
+.player {
+    position: absolute;
+    width: 28px;
+    height: 45px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 8px;
+    font-weight: bold;
+}
+
+.head {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #f1c27d;
+}
+
+.body {
+    width: 22px;
+    height: 20px;
+    border-radius: 5px;
+    margin-top: 2px;
+}
+
+.real {
+    background: white;
+}
+
+.barca {
+    background: #a50044;
+}
+
+.name {
+    margin-top: 2px;
+}
+
+.stamina {
+    width: 22px;
+    height: 3px;
+    background: lime;
+    margin-top: 2px;
+}
+
+/* ===== BALL ===== */
+.ball {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: white;
+}
+
+/* ===== CONTROLS ===== */
+#controls {
+    position: fixed;
+    bottom: 15px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+}
+
+#joystick {
+    width: 100px;
+    height: 100px;
+    background: #ffffff30;
+    border-radius: 50%;
+    position: relative;
+}
+
+#stick {
+    width: 50px;
+    height: 50px;
+    background: #00c6ff;
+    border-radius: 50%;
+    position: absolute;
+    left: 25px;
+    top: 25px;
+}
+
+#buttons {
+    display: flex;
+    flex-direction: column;
+}
+
+#buttons button {
+    width: 75px;
+    height: 75px;
+    margin: 5px;
+    border-radius: 50%;
+    border: none;
+    font-weight: bold;
+    background: #00c6ff;
+}
+
+/* ===== SUB PANEL ===== */
+#subPanel {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #000000cc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+justify-content: center;
+    z-index: 20;
+}
+
+#subPanel button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    background: #00c6ff;
+    font-weight: bold;
+}
+
+/* ===== HIDDEN CLASS ===== */
+.hidden {
+    display: none;
+}
+// ================= GLOBAL =================
+const field = document.getElementById("field");
+const scoreBoard = document.getElementById("score");
+const timeBoard = document.getElementById("time");
+const commentary = document.getElementById("commentary");
+
+let players = [];
+let enemies = [];
+let ball;
+
+let scoreA = 0;
+let scoreB = 0;
+let time = 0;
+
+let points = 0;
+let money = 500;
+let currentOpponent = "Barcelona";
+
+const opponents = ["Barcelona","Man City","PSG"];
+
+const transferMarket = [
+{ name:"Haaland", price:500 },
+{ name:"Messi", price:700 },
+{ name:"Ronaldo", price:650 },
+{ name:"De Bruyne", price:600 }
+];
+
+// ================= TEAM =================
+const realTeam = [
+"Courtois","Carvajal","Militao","Alaba","Mendy",
+"Bellingham","Modric","Valverde",
+"Vinicius","Mbappe","Rodrygo"
+];
+
+// ================= CREATE =================
+function createPlayer(x,y,name,team){
+let p = document.createElement("div");
+p.className = "player "+team;
+p.style.left = x+"px";
+p.style.top = y+"px";
+
+p.innerHTML = `
+<div class="head"></div>
+<div class="body"></div>
+<div class="name">${name}</div>
+`;
+
+field.appendChild(p);
+return p;
+}
+
+function createTeams(){
+players=[];
+enemies=[];
+field.innerHTML="";
+
+createBall();
+
+// 4-3-3 FORMATION
+const positions = [
+[180,480],[80,420],[140,420],[220,420],[280,420],
+[120,340],[180,340],[240,340],
+[100,260],[180,240],[260,260]
+];
+
+for(let i=0;i<11;i++){
+players.push(createPlayer(positions[i][0],positions[i][1],realTeam[i],"real"));
+}
+
+// AI team random formation
+for(let i=0;i<11;i++){
+enemies.push(createPlayer(positions[i][0],80,"AI","enemy"));
+}
+}
+
+function createBall(){
+ball=document.createElement("div");
+ball.className="ball";
+ball.style.left="180px";
+ball.style.top="300px";
+field.appendChild(ball);
+}
+
+// ================= CONTROL =================
+let controlledIndex = 0;
+
+function autoSwitch(){
+let min=9999;
+players.forEach((p,i)=>{
+let dx=parseInt(p.style.left)-parseInt(ball.style.left);
+let dy=parseInt(p.style.top)-parseInt(ball.style.top);
+let d=Math.sqrt(dx*dx+dy*dy);
+if(d<min){min=d;controlledIndex=i;}
+});
+}
+
+function move(dx,dy){
+autoSwitch();
+let p=players[controlledIndex];
+
+p.style.left=parseInt(p.style.left)+dx/5+"px";
+p.style.top=parseInt(p.style.top)+dy/5+"px";
+
+let dist=Math.abs(parseInt(p.style.left)-parseInt(ball.style.left))+
+Math.abs(parseInt(p.style.top)-parseInt(ball.style.top));
+
+if(dist<30){
+ball.style.left=p.style.left;
+ball.style.top=p.style.top;
+}
+}
+
+// ================= PASS / SHOOT =================
+function passBall(){
+ball.style.top=parseInt(ball.style.top)-70+"px";
+showComment("Đường chuyền chính xác!");
+}
+
+function shootBall(){
+ball.style.top=parseInt(ball.style.top)-120+"px";
+
+if(parseInt(ball.style.top)<60){
+goalScored();
+}
+}
+
+function goalScored(){
+scoreA++;
+money+=200;
+updateScore();
+showComment("⚽ GOAL REAL MADRID!");
+resetBall();
+playCrowd();
+}
+
+// ================= AI SMART =================
+function aiLogic(){
+enemies.forEach(ai=>{
+let dx=parseInt(ball.style.left)-parseInt(ai.style.left);
+let dy=parseInt(ball.style.top)-parseInt(ai.style.top);
+
+ai.style.left=parseInt(ai.style.left)+dx/40+"px";
+ai.style.top=parseInt(ai.style.top)+dy/40+"px";
+
+if(Math.abs(dx)<20 && Math.abs(dy)<20){
+ball.style.top=parseInt(ball.style.top)+100+"px";
+if(parseInt(ball.style.top)>500){
+scoreB++;
+updateScore();
+showComment("⚽ "+currentOpponent+" ghi bàn!");
+resetBall();
+}
+}
+});
+}
+
+// ================= LEAGUE =================
+function nextMatch(){
+currentOpponent = opponents[Math.floor(Math.random()*opponents.length)];
+time=0;
+scoreA=0;
+scoreB=0;
+createTeams();
+updateScore();
+showComment("Trận mới vs "+currentOpponent);
+}
+
+// ================= TRANSFER =================
+function openTransfer(){
+let list="";
+transferMarket.forEach(p=>{
+list+=`${p.name} - $${p.price}\n`;
+});
+let choice=prompt("Chuyển nhượng:\n"+list+"\nNhập tên cầu thủ:");
+if(!choice)return;
+
+let player=transferMarket.find(p=>p.name.toLowerCase()==choice.toLowerCase());
+if(player && money>=player.price){
+money-=player.price;
+players[10].querySelector(".name").innerText=player.name;
+alert("Mua thành công "+player.name);
+}else{
+alert("Không đủ tiền!");
+}
+}
+
+// ================= SCORE =================
+function updateScore(){
+scoreBoard.innerText=`Real Madrid ${scoreA} - ${scoreB} ${currentOpponent} | $${money}`;
+}
+
+// ================= TIMER =================
+setInterval(()=>{
+time++;
+aiLogic();
+
+let m=Math.floor(time/60);
+let s=time%60;
+if(s<10)s="0"+s;
+timeBoard.innerText=m+":"+s;
+
+if(time>=90){
+if(scoreA>scoreB)points+=3;
+if(scoreA==scoreB)points+=1;
+nextMatch();
+}
+},200);
+
+// ================= COMMENT =================
+function showComment(text){
+commentary.classList.remove("hidden");
+commentary.innerText=text;
+setTimeout(()=>commentary.classList.add("hidden"),2000);
+}
+
+// ================= SOUND =================
+function playCrowd(){
+let audio=new Audio("https://actions.google.com/sounds/v1/crowds/crowd_cheer.ogg");
+audio.play();
+}
